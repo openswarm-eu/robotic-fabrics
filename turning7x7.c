@@ -1,5 +1,6 @@
 #include "kilolib.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 //#define DEBUG
 //#include <debug.h>
@@ -8,15 +9,15 @@
 // -------------------------------------------- Constant Declaration --------------------------------------------
 // --------------------------------------------------------------------------------------------------------------
 
-// The CODE is scalable trough 3 variables: number of kilobots, number of grid rows, number of grid coloumns. 
-#define NUM_Kilobots 9                     // Number of kilobots
+// The CODE is scalable trough 3 variables: number of kilobots, number of grid rows, number of grid coloumns.
+#define NUM_Kilobots 49                     // Number of kilobots
 #define PI 3.1415926535                     // Pi
-#define Num_Matrix_Rows 3                   // Number of grid rows
-#define Num_Matrix_Coloumns 3           // Number of grid coloumns
+#define Num_Matrix_Rows 7                   // Number of grid rows
+#define Num_Matrix_Coloumns 7           // Number of grid coloumns
 
 #define STOP 0                              // variables used for the motion (see function: void set_motion())
 #define FORWARD 1
-#define LEFT 2 
+#define LEFT 2
 #define RIGHT 3
 
 
@@ -28,26 +29,26 @@
 #define DIAGONAL_THRESHOLD_LOWER 100
 #define DIAGONAL_THRESHOLD_UPPER  110
 
-#define MOTION_DELAY 500
+#define MOTION_DELAY 100
 
 // Turning
 // Assuming LINK_LENGTH (m) and ROTATION_RADIUS (m) have certain fixed values, modify as needed
-#define LINK_LENGTH 0.03
-#define ROTATION_RADIUS 0.5
-
+#define LINK_LENGTH 0.07
+#define ROTATION_RADIUS 1
+#define ROTATION_DIRECTION 'R' // 'L' for left, 'R' for right
 
 // --------------------------------------------------------------------------------------------------------------
 // -------------------------------------------- Variable Declaration --------------------------------------------
 // --------------------------------------------------------------------------------------------------------------
 
 // ---------- Message Variables ------------
-message_t message; 
+message_t message;
 int new_message = 0;
 
 int composed_message = 0;                   // the firs byte is composed of two part, one is the kilobot ID and the other is the status is which the Kilobot is operating
 int composed_message_rx = 0;
 
-int message_ID = 0;                         
+int message_ID = 0;
 int message_distance = 0;
 
 int ID_N_dist = 0;                          // ID of the Kilobot positioned above, on the NORD direction; variable used for the receiving messages
@@ -87,7 +88,7 @@ int alpha_deg[3];                   // starting from the top RIGHT position the 
 int alpha_deg_two[3];
 float temp_angle_float = 0;
 float dist_float[3];
-float dist_float_two[3];            // in order to compute angles relative to differents triangular shapes  
+float dist_float_two[3];            // in order to compute angles relative to differents triangular shapes
 
 // ---------- Loop Variables ------------
 int i = 0;
@@ -103,8 +104,7 @@ unsigned long int last_timereset = 0;
 
 // ---------- Turning Variables ------------
 int i_pos_in_grid, j_pos_in_grid;
-float prob_left;
-//float prob_right;
+float prob_left, prob_right;
 
 // --------------------------------------------------------------------------------------------------------------
 // ----------------------------------------------- Motor Function -----------------------------------------------
@@ -117,12 +117,12 @@ void set_motion(unsigned int new_motion){
         current_motion = new_motion;
         if (current_motion == STOP)
         {
-            //set_color(RGB(3, 0, 0)); //red
+            set_color(RGB(1, 0, 0)); //red
             set_motors(0,0);
         }
         else if(current_motion == FORWARD)
         {
-            //set_color(RGB(0, 3, 0)); //green
+            set_color(RGB(0, 1, 0)); //green
             spinup_motors();
             set_motors(kilo_straight_left, kilo_straight_right);
         }
@@ -131,7 +131,7 @@ void set_motion(unsigned int new_motion){
             //set_color(RGB(0, 0, 3)); //blue
             spinup_motors();
             set_motors(kilo_turn_left,0);
-         
+
         }
         else if (current_motion == RIGHT)
         {
@@ -150,22 +150,22 @@ void msg_codedist_tx(uint8_t operating_mode, uint8_t N_dist, uint8_t NE_dist, ui
 
     composed_message = operating_mode << 7 | kilo_uid;
 
-    message.type = NORMAL;  
-    message.data[0] = composed_message;                                                     
-    message.data[1] = N_dist;                           
+    message.type = NORMAL;
+    message.data[0] = composed_message;
+    message.data[1] = N_dist;
     message.data[2] = NE_dist;
     message.data[3] = E_dist;
     message.data[4] = SE_dist;
     message.data[5] = S_dist;
     message.data[6] = SW_dist;
     message.data[7] = W_dist;
-    message.data[8] = NW_dist;              
+    message.data[8] = NW_dist;
     message.crc = message_crc(&message);
 
     composed_message = operating_mode << 7 | kilo_uid;
 
     //printf("ID = %d and N_dist is %d and NE_dist is %d and E_dist is %d and SE_dist is %d and S_dist is %d and SW_dist is %d and W_dist is %d and NW_dist is %d \n \n", kilo_uid, N_dist, NE_dist, E_dist,SE_dist,S_dist,SW_dist,W_dist,NW_dist);
-    
+
 }
 
 
@@ -176,7 +176,7 @@ message_t *message_tx(){
 
 void tx_message_success(){
 
-    msg_codedist_tx(operating_mode_tx,kil_dist_matrix[0][1],kil_dist_matrix[0][2],kil_dist_matrix[0][3],kil_dist_matrix[0][4],kil_dist_matrix[0][5],kil_dist_matrix[0][6],kil_dist_matrix[0][7],kil_dist_matrix[0][8]); 
+    msg_codedist_tx(operating_mode_tx,kil_dist_matrix[0][1],kil_dist_matrix[0][2],kil_dist_matrix[0][3],kil_dist_matrix[0][4],kil_dist_matrix[0][5],kil_dist_matrix[0][6],kil_dist_matrix[0][7],kil_dist_matrix[0][8]);
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -236,7 +236,7 @@ void init_random(int seed) {
 // ---------------------------------------------- Initialization ------------------------------------------------
 // --------------------------------------------------------------------------------------------------------------
 
-void setup(){ 
+void setup(){
 
     // Setting initialised variables to 0 to avoid NaN errors in case of communication delays
     for (i = 0; i < 9; ++i){
@@ -257,7 +257,7 @@ void setup(){
 
 
     /*  DIAGRAM
-        /----\        /----\        /----\              /----\        /----\        /----\                  
+        /----\        /----\        /----\              /----\        /----\        /----\
         |  A |========|  B |========|  C |              |  8 |========|  1 |========|  2 |
         \----/        \----/        \----/              \----/        \----/        \----/
           ||            ||            ||                  ||            ||            ||
@@ -275,7 +275,7 @@ void setup(){
     */
 
     if(kilo_uid <= Num_Matrix_Coloumns)             //If KB is on the first row (1 to n) (A to C)
-    {                   
+    {
         if(kilo_uid == 1)                           //If first in row (A on diagram) (storing A (itself) and B,E,D)
         {
             neighbours_IDs_array[0] = kilo_uid;
@@ -314,7 +314,7 @@ void setup(){
             neighbours_IDs_array[0] = kilo_uid;
             neighbours_IDs_array[1] = kilo_uid - Num_Matrix_Coloumns;
             neighbours_IDs_array[7] = kilo_uid - 1;
-            neighbours_IDs_array[8] = kilo_uid - Num_Matrix_Coloumns - 1;               
+            neighbours_IDs_array[8] = kilo_uid - Num_Matrix_Coloumns - 1;
         }
         else                                                            //If any other (H on diagram)
         {
@@ -345,7 +345,7 @@ void setup(){
         neighbours_IDs_array[6] = kilo_uid + Num_Matrix_Coloumns - 1;
         neighbours_IDs_array[7] = kilo_uid - 1;
         neighbours_IDs_array[8] = kilo_uid - Num_Matrix_Coloumns - 1;
-    } 
+    }
     else                                                //Otherwise its in the centre (E)
     {
         neighbours_IDs_array[0] = kilo_uid;
@@ -361,26 +361,26 @@ void setup(){
 
     //Logic check to ensure that any invalid Neighbour IDs are set to 0
     for (i = 0; i < 9; ++i){
-        
+
         if(neighbours_IDs_array[i] < 0 || neighbours_IDs_array[i] > NUM_Kilobots){
 
             neighbours_IDs_array[i] = 0;
         }
-    }   
-    
+    }
+
     if (kilo_uid == 1){                                     // LEDs turned on for 3 seconds in order to check the proper uploading of the code on the Kilobot,
                                                                     // each robot LED colour depends on the ID, so on the position, of the robot itself in the grid
-        
+
         set_color(RGB(1,0,0));      // red LED
 
     } else if (kilo_uid < Num_Matrix_Coloumns && kilo_uid > 1){
-        
+
         set_color(RGB(0,1,0));      // green LED
 
     } else if (kilo_uid == Num_Matrix_Coloumns){
-        
+
         set_color(RGB(0,0,1));      // blue LED
-    
+
     } else if ((kilo_uid - 1) % Num_Matrix_Coloumns == 0 && kilo_uid != 1 && kilo_uid < (Num_Matrix_Rows * Num_Matrix_Coloumns) - Num_Matrix_Coloumns){
 
         set_color(RGB(1,1,0));      // orange LED
@@ -391,15 +391,15 @@ void setup(){
 
     } else if (kilo_uid == Num_Matrix_Rows * Num_Matrix_Coloumns - Num_Matrix_Coloumns + 1){
 
-        set_color(RGB(0,1,1));      // magenta LED 
+        set_color(RGB(0,1,1));      // magenta LED
 
     } else if (kilo_uid > (Num_Matrix_Rows * Num_Matrix_Coloumns - Num_Matrix_Coloumns + 1) && kilo_uid != Num_Matrix_Coloumns * Num_Matrix_Rows){
 
         set_color(RGB(1,1,1));      // white LED
 
     } else if (kilo_uid == Num_Matrix_Coloumns * Num_Matrix_Rows){
-        
-        set_color(RGB(1,0,0));      // red LED  
+
+        set_color(RGB(1,0,0));      // red LED
 
     } else {
 
@@ -424,16 +424,17 @@ void setup(){
     /* Setup for turning */
     // Calculate position (x, y) in the grid based on ID
     get_coordinates(kilo_uid, Num_Matrix_Rows, &i_pos_in_grid, &j_pos_in_grid);
-    printf("Robot ID: %d at position (x, y): (%d, %d)\n", kilo_uid, i_pos_in_grid, j_pos_in_grid);
+//    printf("Robot ID: %d at position (x, y): (%d, %d)\n", kilo_uid, i_pos_in_grid, j_pos_in_grid);
 
     // Initialize random number generator with robot's unique ID
     init_random(kilo_uid);
 
     // Calculate probabilities for moving left and right
-    prob_left = p_left(i_pos_in_grid, j_pos_in_grid);
-//    prob_right = p_right(i_pos_in_grid, j_pos_in_grid);
-
-
+    if(ROTATION_DIRECTION == 'L') {
+        prob_left = p_left(i_pos_in_grid, j_pos_in_grid);
+    } else if(ROTATION_DIRECTION == 'R') {
+        prob_right = p_right(i_pos_in_grid, j_pos_in_grid);
+    }
 
 }
 
@@ -444,8 +445,8 @@ void setup(){
 
 void loop(){
 
-    if (State == 0){                        /******************************* State 0 ********************************/  
-                                            // in this code there is only one state, but other states can be easily added   
+    if (State == 0){                        /******************************* State 0 ********************************/
+                                            // in this code there is only one state, but other states can be easily added
 
         // ----------------------------------------------------------------------------------------------------------
         // Computing the average distance between node i and j (from stored values of dist(i,j) and dist(j,i)
@@ -454,16 +455,16 @@ void loop(){
             for (j = i; j < 9; ++j)
             {
                 if(kil_dist_matrix[i][j] != 0 && kil_dist_matrix[j][i] == 0)
-                {                       
+                {
                     kil_dist_matrix[j][i] = kil_dist_matrix[i][j];
                 }
                 else if(kil_dist_matrix[j][i] != 0 && kil_dist_matrix[i][j] == 0)
                 {
                     kil_dist_matrix[i][j] = kil_dist_matrix[j][i];
-                } 
+                }
                 else if(kil_dist_matrix[i][j] != 0 && kil_dist_matrix[j][i] != 0)   // compute the average value
-                {               
-                    temp_dist = ((float)kil_dist_matrix[i][j] + (float)kil_dist_matrix[j][i]) / 2.0 + 0.5;      // approximation by excess      
+                {
+                    temp_dist = ((float)kil_dist_matrix[i][j] + (float)kil_dist_matrix[j][i]) / 2.0 + 0.5;      // approximation by excess
                     kil_dist_matrix[i][j] = (int)temp_dist;
                     kil_dist_matrix[j][i] = (int)temp_dist;
                 }
@@ -475,32 +476,32 @@ void loop(){
         // Depending on the position of the Kilobot in the grid, different distances are needed to compute the angles
 
         if (kilo_uid == 1)                                              // kiloID 1 (in a 3x3 grid)
-        {                                                               
-            dist_float[0] = (float)kil_dist_matrix[5][3];                           
+        {
+            dist_float[0] = (float)kil_dist_matrix[5][3];
             dist_float[1] = (float)kil_dist_matrix[0][5];
             dist_float[2] = (float)kil_dist_matrix[0][3];
         }
         else if (kilo_uid < Num_Matrix_Coloumns && kilo_uid > 1)        // kiloID 2 (in a 3x3 grid)
-        {           
-            dist_float[0] = (float)kil_dist_matrix[5][3];               
+        {
+            dist_float[0] = (float)kil_dist_matrix[5][3];
             dist_float[1] = (float)kil_dist_matrix[0][5];
             dist_float[2] = (float)kil_dist_matrix[0][3];
 
             dist_float_two[0] = (float)kil_dist_matrix[7][5];
             dist_float_two[1] = (float)kil_dist_matrix[0][7];
-            dist_float_two[2] = (float)kil_dist_matrix[0][5];   
+            dist_float_two[2] = (float)kil_dist_matrix[0][5];
         }
         else if(kilo_uid == Num_Matrix_Coloumns * Num_Matrix_Rows)      // kiloID 9 (in a 3x3 grid)
-        {           
+        {
             dist_float[0] = (float)kil_dist_matrix[7][1];
             dist_float[1] = (float)kil_dist_matrix[0][7];
-            dist_float[2] = (float)kil_dist_matrix[0][1]; 
+            dist_float[2] = (float)kil_dist_matrix[0][1];
         }
         else if(kilo_uid == Num_Matrix_Coloumns)                        // kiloID 3 (in a 3x3 grid)
-        {                                   
+        {
             dist_float[0] = (float)kil_dist_matrix[7][5];
             dist_float[1] = (float)kil_dist_matrix[0][7];
-            dist_float[2] = (float)kil_dist_matrix[0][5];   
+            dist_float[2] = (float)kil_dist_matrix[0][5];
         }
         else if (kilo_uid % Num_Matrix_Coloumns == 0 && kilo_uid != Num_Matrix_Coloumns * Num_Matrix_Rows && kilo_uid != Num_Matrix_Coloumns)
         {                                                               // kiloID 6 (in a 3x3 grid)
@@ -526,7 +527,7 @@ void loop(){
         {                                                               // kiloID 7 (in a 3x3 grid)
             dist_float[0] = (float)kil_dist_matrix[3][1];
             dist_float[1] = (float)kil_dist_matrix[0][3];
-            dist_float[2] = (float)kil_dist_matrix[0][1];   
+            dist_float[2] = (float)kil_dist_matrix[0][1];
         }
         else if ((kilo_uid - 1) % Num_Matrix_Coloumns == 0 && kilo_uid != 1 && kilo_uid < (Num_Matrix_Rows * Num_Matrix_Coloumns) - Num_Matrix_Coloumns)
         {                                                               // kiloID 4 (in a 3x3 grid)
@@ -538,15 +539,15 @@ void loop(){
             dist_float_two[1] = (float)kil_dist_matrix[0][5];
             dist_float_two[2] = (float)kil_dist_matrix[0][3];
         }
-        else 
+        else
         {                                                               // kiloID 5 (in a 3x3 grid)
             dist_float[0] = (float)kil_dist_matrix[5][3];
             dist_float[1] = (float)kil_dist_matrix[0][5];
-            dist_float[2] = (float)kil_dist_matrix[0][3]; 
+            dist_float[2] = (float)kil_dist_matrix[0][3];
 
             dist_float_two[0] = (float)kil_dist_matrix[7][1];
             dist_float_two[1] = (float)kil_dist_matrix[0][7];
-            dist_float_two[2] = (float)kil_dist_matrix[0][1];           
+            dist_float_two[2] = (float)kil_dist_matrix[0][1];
         }
 
 
@@ -565,7 +566,14 @@ void loop(){
         float p = (float)rand() / RAND_MAX;
 
         // Compare random number with probability and move accordingly
-        if (p < prob_left) {
+        float prob;
+        if(ROTATION_DIRECTION == 'L') {
+            prob = prob_left;
+        } else if(ROTATION_DIRECTION == 'R') {
+            prob = prob_right;
+        }
+
+        if (p < prob) {
             set_motion(FORWARD);
             delay(MOTION_DELAY);
         } else {
@@ -585,14 +593,14 @@ void loop(){
 void message_rx(message_t *m, distance_measurement_t *distance_measurement){
 
     if (m->type == 120) { // initial identification
-        
+
         int id = (m->data[0] << 8) | m->data[1];
         if (id == kilo_uid) {
             set_color(RGB(0,0,3));
         } else {
             set_color(RGB(3,0,0));
-        } 
-    
+        }
+
     } else {
 
         new_message = 1;
@@ -608,24 +616,24 @@ void message_rx(message_t *m, distance_measurement_t *distance_measurement){
         ID_S_dist = m->data[5];
         ID_SW_dist = m->data[6];
         ID_W_dist = m->data[7];
-        ID_NW_dist = m->data[8]; 
-        message_distance = estimate_distance(distance_measurement);   
+        ID_NW_dist = m->data[8];
+        message_distance = estimate_distance(distance_measurement);
 
-        
+
         if (message_ID != 0 && message_distance != 0){              // filtering the distances detected, saving them following the proper order in the matrix of distances
 
             for (l = 1; l < 9; ++l){
-                
+
                 if(neighbours_IDs_array[l] == message_ID){
 
-                    kil_dist_matrix[0][l] = message_distance;                                   
+                    kil_dist_matrix[0][l] = message_distance;
 
                     break;
-                }               
+                }
             }
 
             if(message_ID == kilo_uid - 1)              // saving the distances of the neighbourhood transmitted in the message
-            {                               
+            {
                 kil_dist_matrix[7][8] = ID_N_dist;      // distance between the Kilobot ID, from which the message is received, and its neighbour at the NORD.
                 kil_dist_matrix[7][1] = ID_NE_dist;
                 kil_dist_matrix[7][0] = ID_E_dist;
@@ -646,7 +654,7 @@ void message_rx(message_t *m, distance_measurement_t *distance_measurement){
                 kil_dist_matrix[1][3] = ID_SE_dist;
                 kil_dist_matrix[1][0] = ID_S_dist;
                 kil_dist_matrix[1][7] = ID_SW_dist;
-                kil_dist_matrix[1][8] = ID_W_dist;  
+                kil_dist_matrix[1][8] = ID_W_dist;
             }
             else if(message_ID == kilo_uid + Num_Matrix_Coloumns)
             {
@@ -654,7 +662,7 @@ void message_rx(message_t *m, distance_measurement_t *distance_measurement){
                 kil_dist_matrix[5][3] = ID_NE_dist;
                 kil_dist_matrix[5][4] = ID_E_dist;
                 kil_dist_matrix[5][6] = ID_W_dist;
-                kil_dist_matrix[5][7] = ID_NW_dist; 
+                kil_dist_matrix[5][7] = ID_NW_dist;
             }
             else if(message_ID == kilo_uid - Num_Matrix_Coloumns - 1)
             {
@@ -683,9 +691,9 @@ void message_rx(message_t *m, distance_measurement_t *distance_measurement){
             else
             {
                 // the message has come from a neighbour of a neighbour
-            }       
+            }
         }
-    }   
+    }
 }
 
 // --------------------------------------------------------------------------------------------------------------
