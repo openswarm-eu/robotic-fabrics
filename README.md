@@ -11,4 +11,4 @@ This repository contains the code for the paper submission to ICRA 2025:
 
 ## Supplementary videos
 
-Experiment videos can be found [here](10.15131/shef.data.27021310).
+Experiment videos can be found [here](https://doi.org/10.15131/shef.data.27021310).
