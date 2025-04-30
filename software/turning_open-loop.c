@@ -11,7 +11,7 @@
 #define Num_Matrix_Rows 7            // Number of grid rows
 #define Num_Matrix_Coloumns 7        // Number of grid coloumns
 #define LINK_LENGTH 0.07             // The center-to-center distance between the robots (m)
-#define ROTATION_RADIUS 3.40282e+03  // The rotation radius of the robot-fabric (m)3.40282e+03
+#define ROTATION_RADIUS 1            // The rotation radius of the robot-fabric (m)
 #define ROTATION_DIRECTION 'L'       // 'L' for left rotation, 'R' for right rotation
 // -------------------------------------------------------------------------------------
 
@@ -28,7 +28,7 @@
 unsigned int State = 0;
 
 // ---------- Move Variables ------------
-unsigned int current_motion = 0;
+unsigned int current_motion = STOP;
 
 // ---------- Turning Variables ------------
 int i_pos_in_grid, j_pos_in_grid;
