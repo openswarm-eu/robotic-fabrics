@@ -19,11 +19,16 @@ Experiment videos can be found [here](https://doi.org/10.15131/shef.data.2702131
 If you use Robotic Fabrics in your research, please use the following BibTeX entry:
 
 ```BibTex
-@article{obilikpa2025roboticfabrics,
-    author  = {Obilikpa, Stanley C. and Talamali, Mohamed S. and Miyauchi, Genki and Oyekan, John and Gro{\ss}, Roderich},
-    title   = {Scalable Plug-and-Play Robotic Fabrics Based on Kilobot Modules},
-    journal = {IEEE Robotics and Automation Letters},
-    year    = {2025}
+@article{obilikpa2025scalable,
+    title = {Scalable Plug-and-Play Robotic Fabrics Based on Kilobot Modules},
+    author = {Obilikpa, Stanley C. and Talamali, Mohamed S. and Miyauchi, Genki and Oyekan, John and Gro{\ss}, Roderich},
+    journal = {IEEE Robotics and Automation Letters (RA-L)},
+    volume = {10},
+    number = {7},
+    pages = {6832--6839},
+    year = {2025},
+    publisher = {IEEE},
+    doi = {https://doi.org/10.1109/LRA.2025.3568313},
 }
 ```
 
